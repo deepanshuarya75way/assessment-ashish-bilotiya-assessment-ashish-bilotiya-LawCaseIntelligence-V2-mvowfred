@@ -247,6 +247,137 @@
 </div>
 
 
+
+<!-- Saved Search Configurations -->
+<div class="card" style="padding:24px;margin-bottom:20px;">
+
+  <h2 style="font-size:16px;font-weight:700;color:#f1f5f9;margin:0 0 8px;">
+    Saved Searches
+  </h2>
+
+  <p style="color:#94a3b8;font-size:13px;margin:0 0 18px;">
+    Save your current filters and reload them with one click.
+  </p>
+
+  <!-- Save current filters -->
+  <form method="POST"
+        action="{{ url_for('save_project_search', project_id=project.id) }}"
+        style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+
+    <input
+      type="text"
+      name="name"
+      maxlength="120"
+      required
+      placeholder="Enter a name, e.g. Successful Civil Cases"
+      aria-label="Saved search name"
+      style="flex:1;min-width:220px;padding:10px 12px;
+             border:1px solid #334155;border-radius:8px;
+             background:#0f172a;color:#f1f5f9;">
+
+    <input type="hidden" name="court_type" value="{{ court_type }}">
+    <input type="hidden" name="case_category" value="{{ case_category }}">
+    <input type="hidden" name="outcome" value="{{ outcome }}">
+    <input type="hidden" name="search" value="{{ search }}">
+
+    <button type="submit" class="action-btn">
+      ★ Save Search
+    </button>
+  </form>
+
+  <div style="border-top:1px solid #334155;padding-top:16px;">
+
+    {% if saved_searches %}
+
+      <div style="display:grid;gap:10px;">
+
+        {% for saved in saved_searches %}
+        <div style="display:flex;align-items:center;
+                    justify-content:space-between;gap:12px;
+                    flex-wrap:wrap;padding:14px;
+                    border:1px solid #334155;border-radius:10px;">
+
+          <div style="flex:1;min-width:180px;">
+
+            <p style="color:#f1f5f9;font-weight:600;margin:0;">
+              {{ saved.name }}
+            </p>
+
+            <p style="color:#94a3b8;font-size:12px;line-height:1.7;
+                      margin:5px 0 0;">
+
+              {% if saved.court_type %}
+                Court: {{ saved.court_type }}
+              {% endif %}
+
+              {% if saved.case_category %}
+                · Category: {{ saved.case_category }}
+              {% endif %}
+
+              {% if saved.outcome %}
+                · Outcome: {{ saved.outcome }}
+              {% endif %}
+
+              {% if saved.search %}
+                · Search: {{ saved.search }}
+              {% endif %}
+
+              {% if not saved.court_type
+                    and not saved.case_category
+                    and not saved.outcome
+                    and not saved.search %}
+                All judgments (no filters)
+              {% endif %}
+
+            </p>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;">
+
+            <!-- One-click load -->
+            <a class="action-btn"
+               href="{{ url_for(
+                 'load_project_search',
+                 project_id=project.id,
+                 saved_search_id=saved.id
+               ) }}"
+               style="text-decoration:none;">
+              ↻ Load Search
+            </a>
+
+            <!-- Delete saved search -->
+            <form method="POST"
+                  action="{{ url_for(
+                    'delete_project_search',
+                    project_id=project.id,
+                    saved_search_id=saved.id
+                  ) }}"
+                  onsubmit="return confirm('Delete this saved search?');">
+
+              <button type="submit" class="action-btn btn-delete">
+                🗑 Delete
+              </button>
+
+            </form>
+
+          </div>
+        </div>
+        {% endfor %}
+
+      </div>
+
+    {% else %}
+
+      <p style="color:#64748b;font-size:13px;margin:0;">
+        No saved searches yet. Apply filters above and save your first search.
+      </p>
+
+    {% endif %}
+
+  </div>
+</div>
+
+
 <!-- Processed Judgments -->
 <div class="card" style="padding:24px;">
 

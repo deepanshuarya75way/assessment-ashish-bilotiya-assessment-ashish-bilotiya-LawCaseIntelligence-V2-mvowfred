@@ -107,3 +107,43 @@ class ProcessedJudgment(Base):
             "respondent_arguments": self.respondent_json,
             "trends": self.trends_json, "created_at": str(self.created_at),
         }
+
+
+class SavedSearch(Base):
+    __tablename__ = "saved_searches"
+
+    id = Column(
+        String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4()),
+    )
+
+    project_id = Column(
+        String(36),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    name = Column(String(120), nullable=False)
+
+    court_type = Column(String(255), nullable=False, default="")
+    case_category = Column(String(255), nullable=False, default="")
+    outcome = Column(String(255), nullable=False, default="")
+    search = Column(String(500), nullable=False, default="")
+
+    created_at = Column(DateTime, default=_now, nullable=False)
+
+    project = relationship("Project")
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "project_id": self.project_id,
+            "name": self.name,
+            "court_type": self.court_type or "",
+            "case_category": self.case_category or "",
+            "outcome": self.outcome or "",
+            "search": self.search or "",
+            "created_at": str(self.created_at),
+        }

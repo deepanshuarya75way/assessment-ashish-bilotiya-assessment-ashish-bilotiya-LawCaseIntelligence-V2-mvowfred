@@ -17,6 +17,7 @@ from flask import (Flask, flash, jsonify, redirect, render_template,
                    request, send_from_directory, session, url_for)
 from flask_socketio import SocketIO, emit, join_room
 from werkzeug.utils import secure_filename
+from database.models import SavedSearch
 
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO"),
@@ -206,6 +207,180 @@ def _register_routes(app: Flask) -> None:
 
 
 
+    @app.route(
+        "/project/<project_id>/saved-search/save",
+        methods=["POST"],
+    )
+    def save_project_search(project_id):
+        s = _db()
+
+        try:
+            Project, _, _ = _models()
+
+            project = s.query(Project).filter_by(id=project_id).first()
+
+            if not project:
+                flash("Project not found.", "error")
+                return redirect(url_for("index"))
+
+            name = request.form.get("name", "").strip()
+            court_type = request.form.get("court_type", "").strip()
+            case_category = request.form.get("case_category", "").strip()
+            outcome = request.form.get("outcome", "").strip()
+            search = request.form.get("search", "").strip()
+
+            if not name:
+                flash("Please enter a name for this saved search.", "error")
+                return redirect(url_for(
+                    "project_detail", project_id=project_id
+                ))
+
+            if len(name) > 120:
+                flash("Search name must be 120 characters or fewer.", "error")
+                return redirect(url_for(
+                    "project_detail", project_id=project_id
+                ))
+
+            if (
+                len(court_type) > 255
+                or len(case_category) > 255
+                or len(outcome) > 255
+                or len(search) > 500
+            ):
+                flash("One or more search filters are too long.", "error")
+                return redirect(url_for(
+                    "project_detail", project_id=project_id
+                ))
+
+            saved = SavedSearch(
+                project_id=project.id,
+                name=name,
+                court_type=court_type,
+                case_category=case_category,
+                outcome=outcome,
+                search=search,
+            )
+
+            s.add(saved)
+            s.commit()
+
+            flash(f'Search "{name}" saved successfully.', "success")
+
+            return redirect(url_for(
+                "project_detail",
+                project_id=project_id,
+                court_type=court_type,
+                case_category=case_category,
+                outcome=outcome,
+                search=search,
+            ))
+
+        except Exception:
+            s.rollback()
+            app.logger.exception("Unable to save search")
+            flash("Could not save the search. Please try again.", "error")
+            return redirect(url_for(
+                "project_detail", project_id=project_id
+            ))
+
+        finally:
+            s.close()
+
+
+
+    @app.route(
+    "/project/<project_id>/saved-search/<saved_search_id>/load",
+    methods=["GET"],
+    )
+    def load_project_search(project_id, saved_search_id):
+        s = _db()
+
+        try:
+            Project, _, _ = _models()
+
+            project = s.query(Project).filter_by(id=project_id).first()
+
+            if not project:
+                flash("Project not found.", "error")
+                return redirect(url_for("index"))
+
+            saved = (
+                s.query(SavedSearch)
+                .filter_by(
+                    id=saved_search_id,
+                    project_id=project.id,
+                )
+                .first()
+            )
+
+            if not saved:
+                flash("Saved search not found.", "error")
+                return redirect(url_for(
+                    "project_detail", project_id=project_id
+                ))
+
+            return redirect(url_for(
+                "project_detail",
+                project_id=project_id,
+                court_type=saved.court_type or "",
+                case_category=saved.case_category or "",
+                outcome=saved.outcome or "",
+                search=saved.search or "",
+            ))
+
+        finally:
+            s.close()
+
+
+    @app.route(
+        "/project/<project_id>/saved-search/<saved_search_id>/delete",
+        methods=["POST"],
+    )
+    def delete_project_search(project_id, saved_search_id):
+        s = _db()
+
+        try:
+            Project, _, _ = _models()
+
+            project = s.query(Project).filter_by(id=project_id).first()
+
+            if not project:
+                flash("Project not found.", "error")
+                return redirect(url_for("index"))
+
+            saved = (
+                s.query(SavedSearch)
+                .filter_by(
+                    id=saved_search_id,
+                    project_id=project.id,
+                )
+                .first()
+            )
+
+            if not saved:
+                flash("Saved search not found.", "error")
+            else:
+                name = saved.name
+                s.delete(saved)
+                s.commit()
+                flash(f'Saved search "{name}" deleted.', "success")
+
+            return redirect(url_for(
+                "project_detail", project_id=project_id
+            ))
+
+        except Exception:
+            s.rollback()
+            app.logger.exception("Unable to delete saved search")
+            flash("Could not delete the saved search.", "error")
+            return redirect(url_for(
+                "project_detail", project_id=project_id
+            ))
+
+        finally:
+            s.close()
+
+
     @app.route("/project/<project_id>")
     def project_detail(project_id):
         s = _db()
@@ -224,6 +399,16 @@ def _register_routes(app: Flask) -> None:
                 .filter_by(project_id=project_id)
                 .all()
             )
+
+            # Saved searches belonging to this project
+            saved_searches = (
+                s.query(SavedSearch)
+                .filter_by(project_id=project.id)
+                .order_by(SavedSearch.created_at.desc())
+                .all()
+            )
+
+
 
             # Read filters from the URL
             court_type = request.args.get("court_type", "").strip()
@@ -302,7 +487,8 @@ def _register_routes(app: Flask) -> None:
                 court_type=court_type,
                 case_category=case_category,
                 outcome=outcome,
-                search=search
+                search=search,
+                saved_searches=[item.to_dict() for item in saved_searches],
             )
 
         finally:

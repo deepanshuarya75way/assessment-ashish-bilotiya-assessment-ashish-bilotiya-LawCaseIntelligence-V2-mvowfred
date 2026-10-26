@@ -35,12 +35,12 @@ class Settings(BaseSettings):
     # ── Groq — Fixed Model ────────────────────────────────────────
     # Single model, never changes
     groq_primary_model: str = Field(
-        default="llama-3.3-70b-versatile",
+        default="openai/gpt-oss-20b",
         description="Fixed Groq model. Do NOT change this.",
     )
     # Legacy alias kept so existing code using settings.groq_model still works
     groq_model: str = Field(
-        default="llama-3.3-70b-versatile",
+        default="openai/gpt-oss-20b",
         description="Alias for groq_primary_model.",
     )
 
