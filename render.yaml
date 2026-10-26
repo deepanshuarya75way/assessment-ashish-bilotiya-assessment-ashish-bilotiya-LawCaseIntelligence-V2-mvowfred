@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: lawcase-intelligence
+    env: docker
+    plan: free
+    region: oregon # Change this to your preferred region
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DEBUG
+        value: "false"
+      - key: ASYNC_MODE
+        value: gevent
+      # Use smallest possible model to fit within Render's free tier 512 MB RAM limit
+      # Upgrade to bge-large on Starter plan ($7/mo, 2 GB RAM) for better quality
+      - key: EMBEDDING_MODEL
+        value: sentence-transformers/all-MiniLM-L6-v2
+      # Users should add their GROQ_API_KEY in the Render Dashboard for security
+    # NOTE: Persistent disks are only available on paid plans (Starter $7/month+).
+    # On the free plan, data will be lost on every redeploy.
+    # To enable persistent storage, upgrade to Starter plan and uncomment the disk block below:
+    # disk:
+    #   name: lawcase-data
+    #   mountPath: /app/LawCaseIntelligence/data
+    #   sizeGB: 1
