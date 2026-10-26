@@ -15,6 +15,49 @@
 .btn-resume  { background: #1a2e1a; color: #86efac; border: 1px solid #16a34a; }
 .btn-resume:hover:not(:disabled) { background: #166534; }
 .btn-analyse { background: linear-gradient(135deg,#7c3aed,#5b21b6); color:#fff; border:none; }
+
+/* Legal citation and statute highlighting */
+.legal-highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #334155;
+}
+
+.highlight-group {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.highlight-label {
+  font-size: 12px;
+  font-weight: 700;
+  padding-top: 4px;
+}
+
+.citation-chip {
+  background: #312e81;
+  color: #ddd6fe;
+  border: 1px solid #6366f1;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.statute-chip {
+  background: #713f12;
+  color: #fef3c7;
+  border: 1px solid #d97706;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
 </style>
 
 <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
@@ -393,53 +436,104 @@
 
   {% else %}
 
-    <!-- Judgment List -->
-    <div style="display:grid;gap:12px;" id="judgmentList">
+    
+<!-- Judgment List -->
+<div style="display:grid;gap:12px;" id="judgmentList">
 
-      {% for j in judgments %}
-      <div class="card" style="padding:16px;" id="judgment-{{ j.id }}">
+  {% for j in judgments %}
+  <div class="card" style="padding:16px;" id="judgment-{{ j.id }}">
 
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
 
-          <a href="/judgment/{{ j.id }}"
-             style="text-decoration:none;flex:1;min-width:0;">
+      <a href="/judgment/{{ j.id }}"
+         style="text-decoration:none;flex:1;min-width:0;">
 
-            <p style="color:#f1f5f9;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              {{ j.document_name }}
-            </p>
+        <p style="color:#f1f5f9;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          {{ j.document_name }}
+        </p>
 
-            <p style="color:#64748b;font-size:13px;margin:4px 0 0;">
-              {{ j.court or 'Court N/A' }} ·
-              {{ j.date_of_judgment or 'Date N/A' }}
-            </p>
+        <p style="color:#64748b;font-size:13px;margin:4px 0 0;">
+          {{ j.court or 'Court N/A' }} ·
+          {{ j.date_of_judgment or 'Date N/A' }}
+        </p>
 
-          </a>
+      </a>
 
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
 
-            {% if j.case_category %}
-            <span style="background:#1e3a5f;color:#93c5fd;padding:2px 8px;border-radius:12px;font-size:12px;">
-              {{ j.case_category }}
-            </span>
-            {% endif %}
+        {% if j.case_category %}
+        <span style="background:#1e3a5f;color:#93c5fd;padding:2px 8px;border-radius:12px;font-size:12px;">
+          {{ j.case_category }}
+        </span>
+        {% endif %}
 
-            {% if j.win_indicator %}
-            <span style="background:#14532d;color:#86efac;padding:2px 8px;border-radius:12px;font-size:12px;">
-              {{ j.win_indicator }}
-            </span>
-            {% endif %}
+        {% if j.win_indicator %}
+        <span style="background:#14532d;color:#86efac;padding:2px 8px;border-radius:12px;font-size:12px;">
+          {{ j.win_indicator }}
+        </span>
+        {% endif %}
 
-            <button class="action-btn btn-delete"
-                    onclick="deleteJudgment('{{ project.id }}','{{ j.id }}','{{ j.document_name }}',this)">
-              🗑 Delete
-            </button>
+        <button class="action-btn btn-delete"
+                onclick="deleteJudgment('{{ project.id }}','{{ j.id }}','{{ j.document_name }}',this)">
+          🗑 Delete
+        </button>
 
-          </div>
-        </div>
       </div>
-      {% endfor %}
+    </div>
+
+    <!-- Legal citations and key statutes -->
+    {% set highlights = j.get('legal_highlights', {}) %}
+
+    {% if highlights.get('citations') or highlights.get('key_statutes') %}
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid #334155;display:grid;gap:10px;">
+
+      {% if highlights.get('citations') %}
+      <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+        <span style="color:#c4b5fd;font-size:12px;font-weight:700;padding-top:4px;">
+          ⚖ Legal Citations
+        </span>
+
+        {% for citation in highlights.get('citations', []) %}
+        <span style="background:#312e81;color:#ddd6fe;border:1px solid #6366f1;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;">
+          {% if citation is mapping %}
+            {{ citation.get('citation') or citation.get('case_name') or citation.get('name') or citation.get('title') or 'Citation' }}
+          {% else %}
+            {{ citation }}
+          {% endif %}
+        </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if highlights.get('key_statutes') %}
+      <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;">
+        <span style="color:#fcd34d;font-size:12px;font-weight:700;padding-top:4px;">
+          § Key Statutes
+        </span>
+
+        {% for statute in highlights.get('key_statutes', []) %}
+        <span style="background:#713f12;color:#fef3c7;border:1px solid #d97706;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;">
+          {% if statute is mapping %}
+            {{ statute.get('name') or statute.get('section') or statute.get('title') or statute.get('act') or 'Statute' }}
+            {% if statute.get('sections') %}
+              — {{ statute.get('sections') | join(', ') }}
+            {% endif %}
+          {% else %}
+            {{ statute }}
+          {% endif %}
+        </span>
+        {% endfor %}
+      </div>
+      {% endif %}
 
     </div>
+    {% endif %}
+
+  </div>
+  {% endfor %}
+
+</div>
+
 
     <!-- Pagination Controls -->
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;">

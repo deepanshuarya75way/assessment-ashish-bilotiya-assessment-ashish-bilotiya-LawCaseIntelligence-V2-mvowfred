@@ -381,6 +381,121 @@ def _register_routes(app: Flask) -> None:
             s.close()
 
 
+    # @app.route("/project/<project_id>")
+    # def project_detail(project_id):
+    #     s = _db()
+    #     Project, DocumentInProject, ProcessedJudgment = _models()
+
+    #     try:
+    #         project = s.query(Project).filter_by(id=project_id).first()
+
+    #         if not project:
+    #             flash("Project not found.", "error")
+    #             return redirect(url_for("index"))
+
+    #         # Keep existing project documents
+    #         docs = (
+    #             s.query(DocumentInProject)
+    #             .filter_by(project_id=project_id)
+    #             .all()
+    #         )
+
+    #         # Saved searches belonging to this project
+    #         saved_searches = (
+    #             s.query(SavedSearch)
+    #             .filter_by(project_id=project.id)
+    #             .order_by(SavedSearch.created_at.desc())
+    #             .all()
+    #         )
+
+
+
+    #         # Read filters from the URL
+    #         court_type = request.args.get("court_type", "").strip()
+    #         case_category = request.args.get("case_category", "").strip()
+    #         outcome = request.args.get("outcome", "").strip()
+    #         search = request.args.get("search", "").strip()
+
+    #         # Base query: judgments belonging to this project
+    #         query = s.query(ProcessedJudgment).filter_by(
+    #             project_id=project_id
+    #         )
+
+    #         # Filter by court type
+    #         if court_type:
+    #             query = query.filter(
+    #                 ProcessedJudgment.court.ilike(f"%{court_type}%")
+    #             )
+
+    #         # Filter by case category
+    #         if case_category:
+    #             query = query.filter(
+    #                 ProcessedJudgment.case_category.ilike(
+    #                     f"%{case_category}%"
+    #                 )
+    #             )
+
+    #         # Filter by outcome / win indicator
+    #         if outcome:
+    #             query = query.filter(
+    #                 ProcessedJudgment.win_indicator.ilike(
+    #                     f"%{outcome}%"
+    #                 )
+    #             )
+
+    #         # Search judgment/document name
+    #         if search:
+    #             query = query.filter(
+    #                 ProcessedJudgment.document_name.ilike(
+    #                     f"%{search}%"
+    #                 )
+    #             )
+
+    #         # Count matching judgments AFTER applying filters
+    #         total_judgments = query.count()
+
+    #         # Pagination: 10 filtered judgments per page
+    #         per_page = 10
+    #         total_pages = max(
+    #             1, (total_judgments + per_page - 1) // per_page
+    #         )
+
+    #         page = request.args.get("page", 1, type=int)
+    #         page = max(1, min(page, total_pages))
+
+    #         judgments = (
+    #             query
+    #             .order_by(ProcessedJudgment.id.desc())
+    #             .offset((page - 1) * per_page)
+    #             .limit(per_page)
+    #             .all()
+    #         )
+
+    #         # Convert objects to dictionaries
+    #         pd = project.to_dict()
+    #         dd = [d.to_dict() for d in docs]
+    #         jd = [j.to_dict() for j in judgments]
+
+    #         return render_template(
+    #             "project.html",
+    #             project=pd,
+    #             documents=dd,
+    #             judgments=jd,
+    #             current_page=page,
+    #             total_pages=total_pages,
+    #             total_judgments=total_judgments,
+    #             court_type=court_type,
+    #             case_category=case_category,
+    #             outcome=outcome,
+    #             search=search,
+    #             saved_searches=[item.to_dict() for item in saved_searches],
+    #         )
+
+    #     finally:
+    #         s.close()
+
+
+
     @app.route("/project/<project_id>")
     def project_detail(project_id):
         s = _db()
@@ -393,14 +508,12 @@ def _register_routes(app: Flask) -> None:
                 flash("Project not found.", "error")
                 return redirect(url_for("index"))
 
-            # Keep existing project documents
             docs = (
                 s.query(DocumentInProject)
                 .filter_by(project_id=project_id)
                 .all()
             )
 
-            # Saved searches belonging to this project
             saved_searches = (
                 s.query(SavedSearch)
                 .filter_by(project_id=project.id)
@@ -408,26 +521,22 @@ def _register_routes(app: Flask) -> None:
                 .all()
             )
 
-
-
-            # Read filters from the URL
+            # Read filters
             court_type = request.args.get("court_type", "").strip()
             case_category = request.args.get("case_category", "").strip()
             outcome = request.args.get("outcome", "").strip()
             search = request.args.get("search", "").strip()
 
-            # Base query: judgments belonging to this project
+            # Base query
             query = s.query(ProcessedJudgment).filter_by(
                 project_id=project_id
             )
 
-            # Filter by court type
             if court_type:
                 query = query.filter(
                     ProcessedJudgment.court.ilike(f"%{court_type}%")
                 )
 
-            # Filter by case category
             if case_category:
                 query = query.filter(
                     ProcessedJudgment.case_category.ilike(
@@ -435,7 +544,6 @@ def _register_routes(app: Flask) -> None:
                     )
                 )
 
-            # Filter by outcome / win indicator
             if outcome:
                 query = query.filter(
                     ProcessedJudgment.win_indicator.ilike(
@@ -443,7 +551,6 @@ def _register_routes(app: Flask) -> None:
                     )
                 )
 
-            # Search judgment/document name
             if search:
                 query = query.filter(
                     ProcessedJudgment.document_name.ilike(
@@ -451,10 +558,9 @@ def _register_routes(app: Flask) -> None:
                     )
                 )
 
-            # Count matching judgments AFTER applying filters
+            # Count after filters
             total_judgments = query.count()
 
-            # Pagination: 10 filtered judgments per page
             per_page = 10
             total_pages = max(
                 1, (total_judgments + per_page - 1) // per_page
@@ -471,10 +577,43 @@ def _register_routes(app: Flask) -> None:
                 .all()
             )
 
-            # Convert objects to dictionaries
+            # Convert records to dictionaries
             pd = project.to_dict()
             dd = [d.to_dict() for d in docs]
             jd = [j.to_dict() for j in judgments]
+
+            # Retrieve citations and statutes from stored JSON fields
+            for judgment, item in zip(judgments, jd):
+                precedents = judgment.precedents_json or {}
+                statutes = judgment.statutes_json or {}
+
+                # Support either dictionary or list JSON structures
+                if isinstance(precedents, dict):
+                    citations = precedents.get("citations", [])
+                    if not citations:
+                        citations = precedents.get("precedents", [])
+                elif isinstance(precedents, list):
+                    citations = precedents
+                else:
+                    citations = []
+
+                if isinstance(statutes, dict):
+                    key_statutes = statutes.get("statutes", [])
+                    if not key_statutes:
+                        key_statutes = statutes.get("sections", [])
+                elif isinstance(statutes, list):
+                    key_statutes = statutes
+                else:
+                    key_statutes = []
+
+                item["legal_highlights"] = {
+                    "citations": citations if isinstance(citations, list) else [],
+                    "key_statutes": (
+                        key_statutes
+                        if isinstance(key_statutes, list)
+                        else []
+                    ),
+                }
 
             return render_template(
                 "project.html",
@@ -488,13 +627,13 @@ def _register_routes(app: Flask) -> None:
                 case_category=case_category,
                 outcome=outcome,
                 search=search,
-                saved_searches=[item.to_dict() for item in saved_searches],
+                saved_searches=[
+                    item.to_dict() for item in saved_searches
+                ],
             )
 
         finally:
             s.close()
-
-
 
 
 
