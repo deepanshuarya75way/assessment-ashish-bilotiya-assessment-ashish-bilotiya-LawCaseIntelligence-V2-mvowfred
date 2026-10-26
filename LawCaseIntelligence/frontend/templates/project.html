@@ -106,7 +106,7 @@
 </div>
 
 <!-- Processed Judgments -->
-{% if judgments %}
+<!-- {% if judgments %}
 <div class="card" style="padding:24px;">
   <h2 style="font-size:16px;font-weight:700;color:#f1f5f9;margin:0 0 16px;">
     Processed Judgments ({{ judgments|length }})
@@ -144,7 +144,223 @@
     {% endfor %}
   </div>
 </div>
-{% endif %}
+{% endif %} -->
+
+
+
+
+
+
+<!-- Legal Judgment Filters -->
+<div style="padding:16px;margin-bottom:20px;background:#0f172a;border:1px solid #334155;border-radius:12px;">
+
+  <h3 style="color:#f1f5f9;font-size:15px;font-weight:700;margin:0 0 14px;">
+    🔎 Legal Judgment Search
+  </h3>
+
+  <form method="GET"
+        action="{{ url_for('project_detail', project_id=project.id) }}">
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+
+      <!-- Court Type -->
+      <div>
+        <label for="court_type"
+               style="display:block;color:#cbd5e1;font-size:13px;margin-bottom:6px;">
+          Court Type
+        </label>
+
+        <select id="court_type" name="court_type"
+                style="width:100%;padding:10px;border-radius:8px;background:#1e293b;color:#f1f5f9;border:1px solid #475569;">
+          <option value="">All Courts</option>
+          <option value="Supreme Court" {% if court_type == 'Supreme Court' %}selected{% endif %}>Supreme Court</option>
+          <option value="High Court" {% if court_type == 'High Court' %}selected{% endif %}>High Court</option>
+          <option value="Civil Court" {% if court_type == 'Civil Court' %}selected{% endif %}>Civil Court</option>
+          <option value="District Court" {% if court_type == 'District Court' %}selected{% endif %}>District Court</option>
+        </select>
+      </div>
+
+      <!-- Case Category -->
+      <div>
+        <label for="case_category"
+               style="display:block;color:#cbd5e1;font-size:13px;margin-bottom:6px;">
+          Case Category
+        </label>
+
+        <select id="case_category" name="case_category"
+                style="width:100%;padding:10px;border-radius:8px;background:#1e293b;color:#f1f5f9;border:1px solid #475569;">
+          <option value="">All Categories</option>
+          <option value="Civil" {% if case_category == 'Civil' %}selected{% endif %}>Civil</option>
+          <option value="Criminal" {% if case_category == 'Criminal' %}selected{% endif %}>Criminal</option>
+          <option value="Constitutional" {% if case_category == 'Constitutional' %}selected{% endif %}>Constitutional</option>
+          <option value="Family" {% if case_category == 'Family' %}selected{% endif %}>Family</option>
+          <option value="Commercial" {% if case_category == 'Commercial' %}selected{% endif %}>Commercial</option>
+        </select>
+      </div>
+
+      <!-- Outcome -->
+      <div>
+        <label for="outcome"
+               style="display:block;color:#cbd5e1;font-size:13px;margin-bottom:6px;">
+          Case Outcome
+        </label>
+
+        <select id="outcome" name="outcome"
+                style="width:100%;padding:10px;border-radius:8px;background:#1e293b;color:#f1f5f9;border:1px solid #475569;">
+          <option value="">All Outcomes</option>
+          <option value="Won" {% if outcome == 'Won' %}selected{% endif %}>Won</option>
+          <option value="Lost" {% if outcome == 'Lost' %}selected{% endif %}>Lost</option>
+          <option value="Partial" {% if outcome == 'Partial' %}selected{% endif %}>Partially Won</option>
+        </select>
+      </div>
+
+      <!-- Text Search -->
+      <div>
+        <label for="search"
+               style="display:block;color:#cbd5e1;font-size:13px;margin-bottom:6px;">
+          Judgment Name
+        </label>
+
+        <input type="text" id="search" name="search"
+               value="{{ search }}"
+               placeholder="Search judgment name..."
+               style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;background:#1e293b;color:#f1f5f9;border:1px solid #475569;">
+      </div>
+
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
+
+      <button type="submit" class="action-btn"
+              style="cursor:pointer;">
+        🔎 Apply Filters
+      </button>
+
+      <a href="{{ url_for('project_detail', project_id=project.id) }}"
+         class="action-btn"
+         style="text-decoration:none;">
+        ✕ Clear Filters
+      </a>
+
+    </div>
+  </form>
+</div>
+
+
+<!-- Processed Judgments -->
+<div class="card" style="padding:24px;">
+
+  <h2 style="font-size:16px;font-weight:700;color:#f1f5f9;margin:0 0 16px;">
+    Processed Judgments ({{ total_judgments }})
+  </h2>
+
+  {% if total_judgments == 0 %}
+
+    <p style="color:#94a3b8;padding:16px 0;">
+      No judgments match your selected filters. Try changing your filters.
+    </p>
+
+  {% else %}
+
+    <!-- Judgment List -->
+    <div style="display:grid;gap:12px;" id="judgmentList">
+
+      {% for j in judgments %}
+      <div class="card" style="padding:16px;" id="judgment-{{ j.id }}">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+
+          <a href="/judgment/{{ j.id }}"
+             style="text-decoration:none;flex:1;min-width:0;">
+
+            <p style="color:#f1f5f9;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ j.document_name }}
+            </p>
+
+            <p style="color:#64748b;font-size:13px;margin:4px 0 0;">
+              {{ j.court or 'Court N/A' }} ·
+              {{ j.date_of_judgment or 'Date N/A' }}
+            </p>
+
+          </a>
+
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+
+            {% if j.case_category %}
+            <span style="background:#1e3a5f;color:#93c5fd;padding:2px 8px;border-radius:12px;font-size:12px;">
+              {{ j.case_category }}
+            </span>
+            {% endif %}
+
+            {% if j.win_indicator %}
+            <span style="background:#14532d;color:#86efac;padding:2px 8px;border-radius:12px;font-size:12px;">
+              {{ j.win_indicator }}
+            </span>
+            {% endif %}
+
+            <button class="action-btn btn-delete"
+                    onclick="deleteJudgment('{{ project.id }}','{{ j.id }}','{{ j.document_name }}',this)">
+              🗑 Delete
+            </button>
+
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+
+    <!-- Pagination Controls -->
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;">
+
+      {% if current_page > 1 %}
+      <a class="action-btn"
+         href="{{ url_for('project_detail',
+              project_id=project.id,
+              page=current_page - 1,
+              court_type=court_type,
+              case_category=case_category,
+              outcome=outcome,
+              search=search) }}"
+         style="text-decoration:none;">
+        ← Previous
+      </a>
+      {% else %}
+      <span class="action-btn" style="opacity:0.5;cursor:not-allowed;">
+        ← Previous
+      </span>
+      {% endif %}
+
+      <span style="color:#94a3b8;font-size:13px;">
+        Page {{ current_page }} of {{ total_pages }}
+        ({{ total_judgments }} matching judgments)
+      </span>
+
+      {% if current_page < total_pages %}
+      <a class="action-btn"
+         href="{{ url_for('project_detail',
+              project_id=project.id,
+              page=current_page + 1,
+              court_type=court_type,
+              case_category=case_category,
+              outcome=outcome,
+              search=search) }}"
+         style="text-decoration:none;">
+        Next →
+      </a>
+      {% else %}
+      <span class="action-btn" style="opacity:0.5;cursor:not-allowed;">
+        Next →
+      </span>
+      {% endif %}
+
+    </div>
+
+  {% endif %}
+
+</div>
+
+
 
 {% endblock %}
 

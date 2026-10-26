@@ -126,17 +126,195 @@ def _register_routes(app: Flask) -> None:
             return redirect(url_for("project_detail", project_id=pid))
         return render_template("new_project.html", form={}, errors=[])
 
+    # @app.route("/project/<project_id>")
+    # def project_detail(project_id):
+    #     s = _db(); Project, DocumentInProject, ProcessedJudgment = _models()
+    #     project = s.query(Project).filter_by(id=project_id).first()
+    #     if not project:
+    #         s.close(); flash("Project not found.", "error"); return redirect(url_for("index"))
+    #     docs      = s.query(DocumentInProject).filter_by(project_id=project_id).all()
+    #     judgments = s.query(ProcessedJudgment).filter_by(project_id=project_id).all()
+    #     pd = project.to_dict(); dd = [d.to_dict() for d in docs]; jd = [j.to_dict() for j in judgments]
+    #     s.close()
+    #     return render_template("project.html", project=pd, documents=dd, judgments=jd)
+
+
+
+    # @app.route("/project/<project_id>")
+    # def project_detail(project_id):
+    #     s = _db()
+    #     Project, DocumentInProject, ProcessedJudgment = _models()
+
+    #     project = s.query(Project).filter_by(id=project_id).first()
+
+    #     if not project:
+    #         s.close()
+    #         flash("Project not found.", "error")
+    #         return redirect(url_for("index"))
+
+    #     # Keep existing project documents
+    #     docs = (
+    #         s.query(DocumentInProject)
+    #         .filter_by(project_id=project_id)
+    #         .all()
+    #     )
+
+    #     # Pagination settings
+    #     per_page = 10
+    #     page = request.args.get("page", 1, type=int)
+    #     page = max(1, page)
+
+    #     # Total number of judgments
+    #     judgment_query = s.query(ProcessedJudgment).filter_by(
+    #         project_id=project_id
+    #     )
+    #     total_judgments = judgment_query.count()
+
+    #     # Calculate pages (at least 1)
+    #     total_pages = max(
+    #         1, (total_judgments + per_page - 1) // per_page
+    #     )
+
+    #     # Keep page within valid bounds
+    #     page = min(page, total_pages)
+
+    #     # Fetch only the judgments for the current page
+    #     judgments = (
+    #         judgment_query
+    #         .order_by(ProcessedJudgment.id.desc())
+    #         .offset((page - 1) * per_page)
+    #         .limit(per_page)
+    #         .all()
+    #     )
+
+    #     # Convert database objects to dictionaries before closing session
+    #     pd = project.to_dict()
+    #     dd = [d.to_dict() for d in docs]
+    #     jd = [j.to_dict() for j in judgments]
+
+    #     s.close()
+
+    #     return render_template(
+    #         "project.html",
+    #         project=pd,
+    #         documents=dd,
+    #         judgments=jd,
+    #         current_page=page,
+    #         total_pages=total_pages,
+    #         total_judgments=total_judgments
+    #     )
+
+
+
     @app.route("/project/<project_id>")
     def project_detail(project_id):
-        s = _db(); Project, DocumentInProject, ProcessedJudgment = _models()
-        project = s.query(Project).filter_by(id=project_id).first()
-        if not project:
-            s.close(); flash("Project not found.", "error"); return redirect(url_for("index"))
-        docs      = s.query(DocumentInProject).filter_by(project_id=project_id).all()
-        judgments = s.query(ProcessedJudgment).filter_by(project_id=project_id).all()
-        pd = project.to_dict(); dd = [d.to_dict() for d in docs]; jd = [j.to_dict() for j in judgments]
-        s.close()
-        return render_template("project.html", project=pd, documents=dd, judgments=jd)
+        s = _db()
+        Project, DocumentInProject, ProcessedJudgment = _models()
+
+        try:
+            project = s.query(Project).filter_by(id=project_id).first()
+
+            if not project:
+                flash("Project not found.", "error")
+                return redirect(url_for("index"))
+
+            # Keep existing project documents
+            docs = (
+                s.query(DocumentInProject)
+                .filter_by(project_id=project_id)
+                .all()
+            )
+
+            # Read filters from the URL
+            court_type = request.args.get("court_type", "").strip()
+            case_category = request.args.get("case_category", "").strip()
+            outcome = request.args.get("outcome", "").strip()
+            search = request.args.get("search", "").strip()
+
+            # Base query: judgments belonging to this project
+            query = s.query(ProcessedJudgment).filter_by(
+                project_id=project_id
+            )
+
+            # Filter by court type
+            if court_type:
+                query = query.filter(
+                    ProcessedJudgment.court.ilike(f"%{court_type}%")
+                )
+
+            # Filter by case category
+            if case_category:
+                query = query.filter(
+                    ProcessedJudgment.case_category.ilike(
+                        f"%{case_category}%"
+                    )
+                )
+
+            # Filter by outcome / win indicator
+            if outcome:
+                query = query.filter(
+                    ProcessedJudgment.win_indicator.ilike(
+                        f"%{outcome}%"
+                    )
+                )
+
+            # Search judgment/document name
+            if search:
+                query = query.filter(
+                    ProcessedJudgment.document_name.ilike(
+                        f"%{search}%"
+                    )
+                )
+
+            # Count matching judgments AFTER applying filters
+            total_judgments = query.count()
+
+            # Pagination: 10 filtered judgments per page
+            per_page = 10
+            total_pages = max(
+                1, (total_judgments + per_page - 1) // per_page
+            )
+
+            page = request.args.get("page", 1, type=int)
+            page = max(1, min(page, total_pages))
+
+            judgments = (
+                query
+                .order_by(ProcessedJudgment.id.desc())
+                .offset((page - 1) * per_page)
+                .limit(per_page)
+                .all()
+            )
+
+            # Convert objects to dictionaries
+            pd = project.to_dict()
+            dd = [d.to_dict() for d in docs]
+            jd = [j.to_dict() for j in judgments]
+
+            return render_template(
+                "project.html",
+                project=pd,
+                documents=dd,
+                judgments=jd,
+                current_page=page,
+                total_pages=total_pages,
+                total_judgments=total_judgments,
+                court_type=court_type,
+                case_category=case_category,
+                outcome=outcome,
+                search=search
+            )
+
+        finally:
+            s.close()
+
+
+
+
+
+
+
+
 
     @app.route("/project/<project_id>/delete", methods=["DELETE"])
     def delete_project(project_id):
